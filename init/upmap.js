@@ -1,9 +1,8 @@
 const mongoose = require("mongoose");
-const Listing = require("../models/listing"); // Adjust path if needed
+const Listing = require("../models/listing");
 const axios = require("axios");
-require("dotenv").config(); // Load environment variables
 
-const MAPTILER_API_KEY = process.env.MAPTILER_API_KEY; // Use environment variable
+const MAPTILER_API_KEY = "125TGmHMaBByaaxaxGOQ"; // Replace with your actual MapTiler API key
 
 mongoose.connect("mongodb+srv://shariq:0OhJmBcBPpoTEITi@cluster0.ugkdr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", {
   useNewUrlParser: true,
@@ -13,14 +12,9 @@ mongoose.connect("mongodb+srv://shariq:0OhJmBcBPpoTEITi@cluster0.ugkdr.mongodb.n
 async function updateListings() {
   try {
     const listings = await Listing.find({
-      $or: [
-        { geometry: { $exists: false } }, // No geometry field at all
-        { geometry: { $eq: {} } },        // Geometry field is empty
-      ],
+      "geometry.coordinates": { $size: 0 }, // Find listings where coordinates are empty
     });
-    const count = await Listing.countDocuments({ geometry: { $exists: false } });
-    console.log(`Listings without geometry: ${count}`);
-    
+
     console.log(`Found ${listings.length} listings to update.`);
 
     for (let listing of listings) {
@@ -31,7 +25,9 @@ async function updateListings() {
 
       try {
         const geoData = await axios.get(
-          `https://api.maptiler.com/geocoding/${encodeURIComponent(listing.location)}.json?key=${MAPTILER_API_KEY}`
+          `https://api.maptiler.com/geocoding/${encodeURIComponent(
+            listing.location
+          )}.json?key=${MAPTILER_API_KEY}`
         );
 
         if (!geoData.data.features.length) {
@@ -48,8 +44,8 @@ async function updateListings() {
 
         await listing.save();
         console.log(`Updated ${listing.title} with coordinates: ${coordinates}`);
-      } catch (geoError) {
-        console.error(`Error fetching coordinates for ${listing.location}:`, geoError.message);
+      } catch (error) {
+        console.error(`Error fetching coordinates for ${listing.location}:`, error.message);
       }
     }
 

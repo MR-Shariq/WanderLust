@@ -42,12 +42,14 @@ module.exports.index = async (req, res) => {
   }
 
   module.exports.showListing = async (req, res) => {
+    
       let id = req.params.id;
       const listing = await Listing.findById(id).populate({path: "reviews" , populate: {path : "author"},}).populate("owner");
       if (!listing) {
         req.flash("error", "Cannot find that listing!");
         return res.redirect("/listings");
       }
+      console.log(listing)
       res.render("listings/show.ejs", { listing });
     };
 
